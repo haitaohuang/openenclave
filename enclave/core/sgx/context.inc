@@ -147,5 +147,12 @@ oe_continue_execution:
     add     $(ABI_REDZONE_BYTE_SIZE + 8), %rsp
 
     // Jump to the target.
-    jmp     *-(ABI_REDZONE_BYTE_SIZE + 8)(%rsp)
+    // Since no register is free, we cannot load the target into a register and
+    // then issue an lfence. Instead, we use retq (return) instruction to carry
+    // out a jump. We first push the target address onto the stack. The retq
+    // will pop the target from the stack and then jump to it.
+    // The assembler's LVI mitigation will insert lfence as appropriate before
+    // retq.
+    pushq     -(ABI_REDZONE_BYTE_SIZE + 8)(%rsp)
+    retq
 .cfi_endproc
